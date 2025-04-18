@@ -241,7 +241,7 @@ namespace Microsoft.Deployment.Utilities
                 return true;
             }
 
-            // If provider and key container names are specified, try to access private key. 
+            // If provider and key container names are specified, try to access private key.
             if (cryptoProviderName != null && keyContainerName != null)
             {
                 try
@@ -258,7 +258,7 @@ namespace Microsoft.Deployment.Utilities
                         return false;
                     }
 
-                    // The following code will modify state of certificates from x509Store, 
+                    // The following code will modify state of certificates from x509Store,
                     // make sure to assign private keys only to certificates that were created from a .cer files
                     if (providerType != 0)
                     {
@@ -310,7 +310,7 @@ namespace Microsoft.Deployment.Utilities
                     {
                         throw;
                     }
-                    // Caller displays an error message.         
+                    // Caller displays an error message.
                     System.Diagnostics.Debug.WriteLine(e.Message);
                 }
             }

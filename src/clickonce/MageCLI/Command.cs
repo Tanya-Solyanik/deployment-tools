@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -74,10 +75,12 @@ namespace Microsoft.Deployment.MageCLI
             None, FullTrust, LocalIntranet, Internet
         }
 
-        public enum DigestAlgorithmValue
+        public enum HashAlgorithmKind
         {
-            // Supporting only sha256
-            sha256RSA
+            // Supporting only sha2
+            sha256RSA,
+            sha384RSA,
+            sha512RSA
         }
 
         /// <summary>
@@ -85,7 +88,7 @@ namespace Microsoft.Deployment.MageCLI
         /// </summary>
         private string inputPath = null;
 
-#region - Command line argument members -
+        #region - Command line argument members -
 
         //////////////////////////////////////////////////////////////////////
         // The following members are public to allow the command-line-argument
@@ -162,18 +165,18 @@ namespace Microsoft.Deployment.MageCLI
         public string supportUrl = null;
 
         [CommandLineArgument(LongName = "Algorithm", ShortName = "a")]
-        public string digestAlgorithmValue = null;
+        public string DigestAlgorithmName = null;
 
         [CommandLineArgument(LongName = "TargetDirectory", ShortName = "td")]
         public string targetDirectory = null;
 
-#endregion
+        #endregion
 
 
         /// <summary>
         /// Algorithm used to calculate the digest hashes inside a manifest
         /// </summary>
-        private DigestAlgorithmValue algorithm = DigestAlgorithmValue.sha256RSA;
+        private HashAlgorithmKind algorithm = HashAlgorithmKind.sha256RSA;
 
         /// <summary>
         /// Application version object, parsed from applicationVersionString member
@@ -309,7 +312,7 @@ namespace Microsoft.Deployment.MageCLI
                                 break;
 
                             case "clearapplicationcache":
-                            case "cc":                                
+                            case "cc":
                                 operations |= Operations.CleanApplicationCache;
                                 break;
 
@@ -454,7 +457,7 @@ namespace Microsoft.Deployment.MageCLI
                 Application.PrintErrorMessage(ErrorMessages.NoVerb);
                 result = false;
             }
-            
+
             // Verification operation is exclusive
             if (Requested(Operations.VerifyManifest) && (Operations.VerifyManifest != operations))
             {
@@ -606,19 +609,26 @@ namespace Microsoft.Deployment.MageCLI
             }
 
             // The default is sha256
-            algorithm = DigestAlgorithmValue.sha256RSA;
+            algorithm = HashAlgorithmKind.sha256RSA;
 
-            if (digestAlgorithmValue != null)
+            if (DigestAlgorithmName != null)
             {
-                // Supporting only sha256
-                if (digestAlgorithmValue.Equals(DigestAlgorithmValue.sha256RSA.ToString(), StringComparison.InvariantCultureIgnoreCase))
+                if (DigestAlgorithmName.Equals(HashAlgorithmKind.sha256RSA.ToString(), StringComparison.InvariantCultureIgnoreCase))
                 {
-                    algorithm = DigestAlgorithmValue.sha256RSA;
+                    algorithm = HashAlgorithmKind.sha256RSA;
+                }
+                else if (DigestAlgorithmName.Equals(HashAlgorithmKind.sha384RSA.ToString(), StringComparison.InvariantCultureIgnoreCase))
+                {
+                    algorithm = HashAlgorithmKind.sha384RSA;
+                }
+                else if (DigestAlgorithmName.Equals(HashAlgorithmKind.sha512RSA.ToString(), StringComparison.InvariantCultureIgnoreCase))
+                {
+                    algorithm = HashAlgorithmKind.sha512RSA;
                 }
                 else
                 {
                     result = false;
-                    Application.PrintErrorMessage(ErrorMessages.InvalidAlgorithmValue, digestAlgorithmValue);
+                    Application.PrintErrorMessage(ErrorMessages.InvalidAlgorithmValue, DigestAlgorithmName);
                 }
             }
 
@@ -630,10 +640,10 @@ namespace Microsoft.Deployment.MageCLI
                     processor = (Processors)Enum.Parse(typeof(Processors), processorString, true);
                     if (processor == Processors.Undefined)
                     {
-                        throw new System.Exception();
+                        throw new Exception();
                     }
                 }
-                catch (System.Exception)
+                catch (Exception)
                 {
                     result = false;
                     Application.PrintErrorMessage(ErrorMessages.InvalidProcessor, processorString);
@@ -891,7 +901,7 @@ namespace Microsoft.Deployment.MageCLI
                 errors += CheckForInvalidLauncherOption("CryptoProvider", cryptoProviderName);
                 errors += CheckForInvalidLauncherOption("Publisher", publisherName);
                 errors += CheckForInvalidLauncherOption("SupportUrl", supportUrl);
-                errors += CheckForInvalidLauncherOption("Algorithm", digestAlgorithmValue);
+                errors += CheckForInvalidLauncherOption("Algorithm", DigestAlgorithmName);
             }
 
             // A signing operation can be caused by the -sign verb, or with 
@@ -1040,7 +1050,7 @@ namespace Microsoft.Deployment.MageCLI
                 inputPath = Path.GetFullPath(inputPath);
             }
 
-            // Make sure the input file exists    
+            // Make sure the input file exists
             if (!File.Exists(inputPath))
             {
                 Application.PrintErrorMessage(ErrorMessages.InvalidPath, inputPath);
@@ -1338,7 +1348,7 @@ namespace Microsoft.Deployment.MageCLI
             bool shouldSign = false;
             if (Requested(Operations.SignApplicationManifest))
             {
-                // If a manifest is already open, use it...
+                // If a manifest is already open, use it
                 // if not and the filenames are different, copy the file then sign it.
                 if (manifest == null && inputPath != outputPath)
                 {
@@ -1380,10 +1390,9 @@ namespace Microsoft.Deployment.MageCLI
             // Save the manifest or license
             if (manifest != null)
             {
-                // Framework version is used for determining which algorithm to use for
-                // generating manifest digests. For v4.5+, sha256 is used.
-                string frameworkVersion = "v4.5";
-                ManifestWriter.WriteManifest(manifest, outputPath, frameworkVersion);
+                // .NET Framework versions below 4.5 can't process SHA256
+                // but mage works only with SHA2.
+                ManifestWriter.WriteManifest(manifest, outputPath, targetframeWorkVersion: "v4.5");
             }
 
             if (shouldSign)
@@ -1398,8 +1407,16 @@ namespace Microsoft.Deployment.MageCLI
                     catch (UriFormatException) { }
                 }
                 Debug.Assert(storedCert != null);
+                var digest = DigestAlgorithmName switch
+                {
+                    DigestAlgorithmName.sha256RSA => (HashAlgorithmType)HashAlgorithmType.SHA256,
+                    DigestAlgorithmName.sha384RSA => (HashAlgorithmType)HashAlgorithmType.SHA384,
+                    DigestAlgorithmName.sha512RSA => (HashAlgorithmType)HashAlgorithmType.SHA512,
+                    _ => (HashAlgorithmType)HashAlgorithmType.SHA256,
+                };
+
 #pragma warning disable CA1416 // This call site is reachable on all platforms. 'SecurityUtilities.SignFile(X509Certificate2, Uri, string)' is only supported on: 'windows'.
-                SecurityUtilities.SignFile(storedCert, stamp, outputPath);
+                SecurityUtilities.SignFile(storedCert, stamp, DigestAlgorithmName, outputPath);
 #pragma warning restore CA1416
             }
 
@@ -1433,7 +1450,7 @@ namespace Microsoft.Deployment.MageCLI
                 {
                     Application.PrintOutputMessage(Application.Resources.GetString("ErrorMessage") + ":", Application.Resources.GetString("ErrorApplicactionCachedCleared"));
                 }
-                
+
                 return;
             }
             else if (Requested(Operations.VerifyManifest))
@@ -1626,7 +1643,7 @@ namespace Microsoft.Deployment.MageCLI
                             break;
                     }
 
-                    Console.WriteLine(resultMessage + " " + msg.Text);
+                    Console.WriteLine($"{resultMessage} {msg.Text}");
                 }
 
                 bOutputMessages = manifest.OutputMessages.ErrorCount + manifest.OutputMessages.WarningCount - suppressedWarningMessageCount > 0;
