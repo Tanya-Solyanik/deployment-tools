@@ -174,7 +174,7 @@ namespace Microsoft.Deployment.Utilities
         /// <returns>
         /// null, if no szOID_ENHANCED_KEY_USAGE is found
         /// false, if szOID_ENHANCED_KEY_USAGE is found but no szOID_CODE_SIGNING usage
-        /// trye, if szOID_ENHANCED_KEY_USAGE is found and szOID_CODE_SIGNING usage
+        /// true, if szOID_ENHANCED_KEY_USAGE is found and szOID_CODE_SIGNING usage
         /// </returns>
         private static bool? CodeSignEnhancedKeyPresent(X509Extension extension)
         {
@@ -213,7 +213,7 @@ namespace Microsoft.Deployment.Utilities
         {
             using (RSA privateKey = cert.GetRSAPrivateKey())
             {
-                return (privateKey != null);
+                return privateKey != null;
             }
         }
 
@@ -234,7 +234,7 @@ namespace Microsoft.Deployment.Utilities
         [SupportedOSPlatform("windows")]
         public static bool SetPrivateKeyIfNeeded(X509Certificate2 certificate, string cryptoProviderName, string keyContainerName, int providerType = -1)
         {
-            if (Certificate.HasPrivateKey(certificate))
+            if (HasPrivateKey(certificate))
             {
                 // We got a .pfx file.
                 // Silently ignore CSP name or key container if either was provided with a .pfx fle.
@@ -250,7 +250,7 @@ namespace Microsoft.Deployment.Utilities
 
                     if (providerType == PROV_UNINITIALIZED)
                     {
-                        providerType = Certificate.GetCspType(cryptoProviderName);
+                        providerType = GetCspType(cryptoProviderName);
                     }
 
                     if (providerType == PROV_UNINITIALIZED)

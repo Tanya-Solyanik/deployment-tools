@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -435,7 +434,7 @@ namespace Microsoft.Deployment.MageCLI
         /// <returns>true if the bit was set, false if not</returns>
         private bool Requested(Operations op)
         {
-            return ((operations & op) > 0);
+            return (operations & op) > 0;
         }
 
         /// <summary>
@@ -825,7 +824,7 @@ namespace Microsoft.Deployment.MageCLI
                 }
             }
 
-            //Return true if the command line was all good, false if anything wasn't right
+            // Return true if the command line was all good, false if anything wasn't right
             return result;
         }
 
@@ -1308,12 +1307,8 @@ namespace Microsoft.Deployment.MageCLI
                 }
             }
 
-            // Choose hashing algorithm - SHA256 for v4.5, which is the only supported algorithm now.
-            string targetFrameworkVersion = "v4.0";
-            if (algorithm == DigestAlgorithmValue.sha256RSA)
-            {
-                targetFrameworkVersion = "v4.5";
-            }
+            // The lowest supported by mage.NET Framework version is 4.5. The lower versions don't have SHA2 support.
+            string targetFrameworkVersion = "v4.5";
 
             // Generate operations
             if (Requested(Operations.GenerateApplicationManifest))
