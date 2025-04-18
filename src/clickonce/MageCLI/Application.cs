@@ -28,7 +28,7 @@ namespace Microsoft.Deployment.MageCLI
         /// 
         [STAThread]
         static int Main(string[] args)
-        {            
+        {
             ProcessExitCodes result = ProcessExitCodes.Success;
 
             try
@@ -57,7 +57,7 @@ namespace Microsoft.Deployment.MageCLI
                 string ex = Resources.GetString("ErrorMessage") + ": " + Resources.GetString("SecurityMessage");
                 Console.WriteLine(ex);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 InternalError(e.Message, e.StackTrace);
                 result = ProcessExitCodes.ErrorUnknown;
@@ -100,7 +100,7 @@ namespace Microsoft.Deployment.MageCLI
         static void InternalError(string message, string stackTrace)
         {
 #if (DEBUG)
-            message = message + Environment.NewLine + stackTrace;            
+            message = message + Environment.NewLine + stackTrace;
 #endif            
             string error = Resources.GetString("InternalError");
 
