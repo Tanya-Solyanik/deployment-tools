@@ -35,7 +35,7 @@ namespace Microsoft.Deployment.MageCLI
             {
                 // Parse command line arguments
                 Command command = new Command(args);
-                
+
                 // Validate command-line arguments, print an error message 
                 // if any invalid arguments are present
                 if (command.CanExecute())
@@ -62,8 +62,8 @@ namespace Microsoft.Deployment.MageCLI
                 InternalError(e.Message, e.StackTrace);
                 result = ProcessExitCodes.ErrorUnknown;
             }
-            
-            return (int) result;
+
+            return (int)result;
         }
 
 
@@ -83,7 +83,7 @@ namespace Microsoft.Deployment.MageCLI
             {
                 if (resources == null)
                 {
-                    resources = new ResourceManager(typeof (Application));
+                    resources = new ResourceManager(typeof(Application));
                 }
 
                 return resources;
@@ -112,11 +112,11 @@ namespace Microsoft.Deployment.MageCLI
             Console.WriteLine(error + " " + message);
         }
 
-        public static void ReportException (Exception ex)
+        public static void ReportException(Exception ex)
         {
-            Console.WriteLine (ex.Message);
+            Console.WriteLine(ex.Message);
 #if (DEBUG)
-            Console.WriteLine (ex.StackTrace);
+            Console.WriteLine(ex.StackTrace);
 #endif
         }
 
@@ -163,7 +163,7 @@ namespace Microsoft.Deployment.MageCLI
 
             try
             {
-                result = (Processors)Enum.Parse(typeof (Processors), processor, true);
+                result = (Processors)Enum.Parse(typeof(Processors), processor, true);
             }
             catch (System.Exception)
             {
@@ -391,9 +391,14 @@ namespace Microsoft.Deployment.MageCLI
         UnableToStartGUI,
 
         /// <summary>
-        /// The -Algorithm option value must be "sha256RSA" - "{0}"
+        /// The -Algorithm option value must be "sha256RSA|sha384RSA|sha512RSA" - "{0}"
         /// </summary>
         InvalidAlgorithmValue,
+
+        /// <summary>
+        /// The -SigningAlgorithm option value must be "sha256RSA|sha384RSA|sha512RSA" - "{0}"
+        /// </summary>
+        InvalidSigningAlgorithmValue,
 
         /// <summary>
         /// This certificate cannot be used for signing - "{0}"
